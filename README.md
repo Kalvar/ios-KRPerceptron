@@ -1,6 +1,6 @@
 ## About
 
-KRPerceptron implemented non-linear and linear algorithm in perceptron of machine learning.
+KRPerceptron implemented non-linear and linear algorithm in perceptron model of machine learning.
 
 #### Podfile
 

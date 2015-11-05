@@ -3,7 +3,7 @@ Pod::Spec.new do |s|
   s.version      = "1.0.0"
   s.summary      = "Non-linear perceptron learning model of machine learning."
   s.description  = <<-DESC
-                   KRPerceptron implemented non-linear and linear algorithm in perceptron of machine learning.
+                   KRPerceptron implemented non-linear and linear algorithm in perceptron model of machine learning.
                    DESC
   s.homepage     = "https://github.com/Kalvar/ios-KRPerceptron"
   s.license      = { :type => 'MIT', :file => 'LICENSE' }
