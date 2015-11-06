@@ -6,7 +6,7 @@ KRPerceptron implemented non-linear and linear algorithm in perceptron model of 
 
 ```ruby
 platform :ios, '7.0'
-pod "KRHebbian", "~> 1.0.0"
+pod "KRHebbian", "~> 1.0.1"
 ```
 
 ## How To Get Started & Samples
@@ -18,10 +18,11 @@ pod "KRHebbian", "~> 1.0.0"
 
 #### Identify Numbers
 ``` objective-c
-KRPerceptron *_perceptron  = [KRPerceptron sharedPerceptron];
-_perceptron.activeFunction = KRPerceptronActiveFunctionBySigmoid;
-_perceptron.maxIteration   = 1000;
-_perceptron.learningRate   = 0.8f;
+KRPerceptron *_perceptron   = [KRPerceptron sharedPerceptron];
+_perceptron.activeFunction  = KRPerceptronActiveFunctionBySigmoid;
+_perceptron.maxIteration    = 1000;
+_perceptron.learningRate    = 0.8f;
+_perceptron.runOnMainThread = YES;
 
 // Number 1
 [_perceptron addPatterns:@[@0, @0, @0, @0, @0, @0, @0, @0, @0, @0, @0, @0,
@@ -88,7 +89,7 @@ _perceptron.learningRate   = 0.8f;
 
 __block typeof(_perceptron) _weakPerceptron = _perceptron;
 [_perceptron setTrainingIteraion:^(NSInteger iteration, NSArray *weights) {
-    //NSLog(@"%li iteration, weights : %@", iteration, weights);
+    NSLog(@"%li iteration, weights : %@", iteration, weights);
 }];
 
 [_perceptron trainingWithCompletion:^(BOOL success, NSArray *weights, NSInteger totalIteration) {
@@ -111,7 +112,7 @@ __block typeof(_perceptron) _weakPerceptron = _perceptron;
 
 ## Version
 
-V1.0.0
+V1.0.1
 
 ## LICENSE
 

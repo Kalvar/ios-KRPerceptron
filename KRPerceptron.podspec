@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "KRPerceptron"
-  s.version      = "1.0.0"
+  s.version      = "1.0.1"
   s.summary      = "Non-linear perceptron learning model of machine learning."
   s.description  = <<-DESC
                    KRPerceptron implemented non-linear and linear algorithm in perceptron model of machine learning.

@@ -18,10 +18,11 @@
 //To learn and verify numbers 0 to 9. And only setups patterns and output goals, and 10 outputs.
 -(void)indentifyNumbers
 {
-    KRPerceptron *_perceptron  = [KRPerceptron sharedPerceptron];
-    _perceptron.activeFunction = KRPerceptronActiveFunctionBySigmoid;
-    _perceptron.maxIteration   = 1000;
-    _perceptron.learningRate   = 0.8f;
+    KRPerceptron *_perceptron   = [KRPerceptron sharedPerceptron];
+    _perceptron.activeFunction  = KRPerceptronActiveFunctionBySigmoid;
+    _perceptron.maxIteration    = 5000;
+    _perceptron.learningRate    = 0.8f;
+    _perceptron.runOnMainThread = YES;
     
     // Number 1
     [_perceptron addPatterns:@[@0, @0, @0, @0, @0, @0, @0, @0, @0, @0, @0, @0,
@@ -88,6 +89,7 @@
     
     __block typeof(_perceptron) _weakPerceptron = _perceptron;
     [_perceptron setTrainingIteraion:^(NSInteger iteration, NSArray *weights) {
+        NSLog(@"%li iteration", iteration);
         //NSLog(@"%li iteration, weights : %@", iteration, weights);
     }];
     

@@ -31,6 +31,7 @@ typedef void(^KRPerceptronPattern)(NSInteger iteration, NSArray *networkOutputs,
 @property (nonatomic, assign) NSInteger totalIteration;
 @property (nonatomic, assign) float convergenceValue;
 @property (nonatomic, assign) NSInteger countOutputNets;
+@property (nonatomic, assign) BOOL runOnMainThread; // Suggets run on Main-Thread to train the network.
 
 @property (nonatomic, assign) KRPerceptronActiveFunctions activeFunction;
 

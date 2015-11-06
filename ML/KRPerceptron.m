@@ -56,13 +56,13 @@ static NSInteger kPatternOutputErrors  = 1;
 // Tanh() which scope is [-1.0, 1.0]
 -(double)_fOfTanh:(double)_x
 {
-    return ( 2.0f / ( 1.0f + pow(M_E, (-2.0f * _x)) ) ) - 1.0f;
+    return ( 2.0f / ( 1.0f + pow(M_E, (-2.0f * _x)) ) ) - 1.0f; // -2.0f = 入
 }
 
 // Sigmoid() whici scope is [0.0, 1.0]
 -(double)_fOfSigmoid:(double)_x
 {
-    return ( 1.0f / ( 1.0f + pow(M_E, (-1.0f * _x)) ) );
+    return ( 1.0f / ( 1.0f + pow(M_E, (-1.0f * _x)) ) ); // -1.0f = 入
 }
 
 // SGN() which scope is (-1, 1) or (0, 1)
@@ -87,6 +87,26 @@ static NSInteger kPatternOutputErrors  = 1;
             break;
     }
     return _activatedValue;
+}
+
+// f'(net), 偏微分
+-(double)_fDashOfNetOutput:(double)_netOutput
+{
+    double _dashOfNet = 0.0f;
+    switch (self.activeFunction)
+    {
+        case KRPerceptronActiveFunctionBySigmoid:
+            _dashOfNet = _netOutput * ( 1 - _netOutput );
+            break;
+        case KRPerceptronActiveFunctionByTanh:
+            _dashOfNet = 1 - ( _netOutput * _netOutput );
+            //_dashOfNet /= (入 / 2)
+            break;
+        default:
+            _dashOfNet = _netOutput;
+            break;
+    }
+    return _dashOfNet;
 }
 
 @end
@@ -148,7 +168,7 @@ static NSInteger kPatternOutputErrors  = 1;
             double _outputValue = [[_netOutputs objectAtIndex:_outputIndex] doubleValue];
             double _errorValue  = [[_outputErrors objectAtIndex:_outputIndex] doubleValue];
             // Formula : -(learning rate) * -(netj output error) * f'(netj) * xj (前頭負負得正)
-            double _deltaWeight = _learningRate * _errorValue * ( _outputValue * ( 1 - _outputValue ) ) * _inputValue;
+            double _deltaWeight = _learningRate * _errorValue * [self _fDashOfNetOutput:_outputValue] * _inputValue;
             double _newWeight   = [_lineWeight doubleValue] + _deltaWeight;
             [_refreshWeights addObject:[NSNumber numberWithDouble:_newWeight]];
             ++_outputIndex;
@@ -160,7 +180,7 @@ static NSInteger kPatternOutputErrors  = 1;
     [self.iterationErrors addObject:_outputErrors];
 }
 
--(void)_loopingPatterns:(NSArray *)_patterns networkOutputHandler:(KRPerceptronPattern)_outputHandler
+-(void)_loopingPatterns:(NSArray *)_patterns tuningWeights:(BOOL)_tuningWeights networkOutputHandler:(KRPerceptronPattern)_outputHandler
 {
     //self.trainingPattern = _outputHandler;
     NSInteger _index     = 0;
@@ -172,8 +192,34 @@ static NSInteger kPatternOutputErrors  = 1;
         {
             _outputHandler(self.totalIteration, self.networkOutputs, _inputs);
         }
-        [self _turningWeightsByInputs:_inputs patternOutputs:_patternOutputs];
+        // Wants to tune weights
+        if( _tuningWeights )
+        {
+            [self _turningWeightsByInputs:_inputs patternOutputs:_patternOutputs];
+        }
         ++_index;
+    }
+}
+
+-(void)_doTraining
+{
+    ++self.iteration;
+    [self.iterationErrors removeAllObjects];
+    [self _loopingPatterns:self.patterns tuningWeights:YES networkOutputHandler:nil];
+    if( self.iteration >= self.maxIteration || [self _mse:self.iterationErrors] <= self.convergenceValue )
+    {
+        if( nil != self.trainingCompletion )
+        {
+            self.trainingCompletion(YES, self.weights, self.iteration);
+        }
+    }
+    else
+    {
+        if( nil != self.trainingIteraion )
+        {
+            self.trainingIteraion(self.iteration, self.weights);
+        }
+        [self _doTraining];
     }
 }
 
@@ -209,6 +255,8 @@ static NSInteger kPatternOutputErrors  = 1;
         _biases             = [NSMutableArray new];
         _networkOutputs     = nil;
         _activeFunction     = KRPerceptronActiveFunctionBySigmoid;
+        
+        _runOnMainThread    = YES; // 是否要跑在 MainThread 裡做訓練
         
         _iteration          = DEFAULT_ITERATION;
         _iterationErrors    = [NSMutableArray new];
@@ -254,8 +302,8 @@ static NSInteger kPatternOutputErrors  = 1;
     
     // 輸入層權重初始化規則 : ( 0.5 / 此層神經元個數 ) ~ ( -0.5 / 此層神經元個數 )
     NSInteger _inputNetCount = [[_patterns firstObject] count];
-    float _inputMax          = DEFAULT_RANDOM_MAX / _inputNetCount;
-    float _inputMin          = DEFAULT_RANDOM_MIN / _inputNetCount;
+    double _inputMax         = DEFAULT_RANDOM_MAX / _inputNetCount;
+    double _inputMin         = DEFAULT_RANDOM_MIN / _inputNetCount;
     for( int i=0; i<_inputNetCount; i++ )
     {
         NSMutableArray *_randomWeights = [NSMutableArray new];
@@ -269,29 +317,27 @@ static NSInteger kPatternOutputErrors  = 1;
     // 輸出層神經元的偏權值
     for( int _i=0; _i<_outputCount; _i++ )
     {
-        [_biases addObject:[NSNumber numberWithDouble:[self _randomMax:_randomMax min:_randomMin]]];
+        [_biases addObject:[NSNumber numberWithDouble:[self _randomMax:_inputMax min:_inputMin]]];
     }
 }
 
 -(void)training
 {
-    ++_iteration;
-    [_iterationErrors removeAllObjects];
-    [self _loopingPatterns:_patterns networkOutputHandler:nil];
-    if( _iteration >= _maxIteration || [self _mse:_iterationErrors] <= _convergenceValue )
+    // If you wanna run on Main-Thread that training iterations could be over 2,000.
+    // 跑在 Main-Thread 較能保證其運行不崩潰，也能做超過 2,000 迭代的連續運算
+    if( _runOnMainThread )
     {
-        if( nil != _trainingCompletion )
-        {
-            _trainingCompletion(YES, _weights, _iteration);
-        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self _doTraining];
+        });
     }
     else
     {
-        if( nil != _trainingIteraion )
-        {
-            _trainingIteraion(_iteration, _weights);
-        }
-        [self training];
+        // 反之，如果只是想要做極短暫的訓練 (100 迭代以下)，那跑在 Async-Thread 裡是穩定可行的
+        dispatch_queue_t queue = dispatch_queue_create("com.krperceptron.train", NULL);
+        dispatch_async(queue, ^(void){
+            [self _doTraining];
+        });
     }
 }
 
@@ -305,7 +351,7 @@ static NSInteger kPatternOutputErrors  = 1;
 {
     _trainingCompletion = nil;
     _iteration          = 1;
-    [self _loopingPatterns:@[_inputs] networkOutputHandler:_completion];
+    [self _loopingPatterns:@[_inputs] tuningWeights:NO networkOutputHandler:_completion];
 }
 
 -(void)reset
