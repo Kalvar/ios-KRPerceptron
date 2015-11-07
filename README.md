@@ -6,7 +6,7 @@ KRPerceptron implemented non-linear and linear algorithm in perceptron model of 
 
 ```ruby
 platform :ios, '7.0'
-pod "KRHebbian", "~> 1.0.1"
+pod "KRPerceptron", "~> 1.0.1"
 ```
 
 ## How To Get Started & Samples
